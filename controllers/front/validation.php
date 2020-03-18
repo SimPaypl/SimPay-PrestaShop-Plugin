@@ -24,76 +24,76 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class SimPayValidationModuleFrontController extends ModuleFrontController {
-	
-	public function postProcess() {
-		
+class SimPayValidationModuleFrontController extends ModuleFrontController
+{
+    
+    public function postProcess()
+    {
+        
         if ($this->module->active == false) {
             exit();
         }
-		
-		$cart = $this->context->cart;
-		
-		$payMethod = Tools::getValue('payMethod');
-		if (!$payMethod) {
-			$this->_errors[] = $this->module->l('Prosimy wybrać metodę płatności!', 'validation');
-		}
-		
+        
+        $cart = $this->context->cart;
+        
+        $payMethod = Tools::getValue('payMethod');
+        if (!$payMethod) {
+            $this->_errors[] = $this->module->l('Prosimy wybrać metodę płatności!', 'validation');
+        }
+        
         if (!$cart->id_customer || !$cart->id_address_delivery || !$cart->id_address_invoice || !$this->module->active) {
             Tools::redirect('index.php?controller=order&step=1');
-			exit();
-		}
-		
-		$customer = new Customer($cart->id_customer);
+            exit();
+        }
+        
+        $customer = new Customer($cart->id_customer);
         if (!Validate::isLoadedObject($customer)) {
             Tools::redirect('index.php?controller=order&step=1');
-		}
-		
+        }
+        
         $authorized = false;
         foreach (Module::getPaymentModules() as $module) {
             if ($module['name'] == 'simpay') {
                 $authorized = true;
                 break;
             }
-		}
+        }
 
         if (!$authorized) {
             die($this->module->l('Prosimy wybrać metodę płatności!', 'validation'));
-		}
-		
+        }
+        
         $this->context->smarty->assign([
             'params' => $_REQUEST,
         ]);
-		
-		$amount = number_format(round((float)$cart->getOrderTotal(true, Cart::BOTH), 2), 2, '.', '');
-		$currency = $this->context->currency;
-		
-		$this->module->validateOrder($cart->id, '10', $amount, $this->module->displayName, null, null, (int)$currency->id, false, $customer->secure_key);
-		
-		$returnUrl = Context::getContext()->shop->getBaseURL(true) . 'index.php?controller=order-confirmation&id_cart=' . $cart->id . '&id_module=' . $this->module->id . '&id_order=' . $this->module->currentOrder.'&key='.$customer->secure_key;
-		
-		$simpayTransaction = new SimPayDBTransaction();
-		$simpayTransaction->setDebugMode(FALSE);
-		$simpayTransaction->setServiceID(Configuration::get('SIMPAY_SERVICE_ID'));
-		$simpayTransaction->setApiKey(Configuration::get('SIMPAY_API_KEY'));
-		$simpayTransaction->setControl($this->module->currentOrder);
-		$simpayTransaction->setCompleteLink($returnUrl);
-		$simpayTransaction->setFailureLink($returnUrl);
-		if (Configuration::get('SIMPAY_PAYMENT_TYPE') == "amount") {
-			$simpayTransaction->setAmount($amount);
-		} elseif (Configuration::get('SIMPAY_PAYMENT_TYPE') == "amount_gross") {
-			$simpayTransaction->setAmountGross($amount);
-		} else {
-			$simpayTransaction->setAmountRequired($amount);
-		}
-		
-		$simpayTransaction->generateTransaction();
-		if ($simpayTransaction->getResults()->status == "success") {
-			Tools::redirect($simpayTransaction->getResults()->link);
-		} else {
-			$this->module->l('Nie udało się przejść do płatności!', 'validation');
-		}
-		
-	}
-	
+        
+        $amount = number_format(round((float)$cart->getOrderTotal(true, Cart::BOTH), 2), 2, '.', '');
+        $currency = $this->context->currency;
+        
+        $this->module->validateOrder($cart->id, '10', $amount, $this->module->displayName, null, null, (int)$currency->id, false, $customer->secure_key);
+        
+        $returnUrl = Context::getContext()->shop->getBaseURL(true) . 'index.php?controller=order-confirmation&id_cart=' . $cart->id . '&id_module=' . $this->module->id . '&id_order=' . $this->module->currentOrder.'&key='.$customer->secure_key;
+        
+        $simpayTransaction = new SimPayDBTransaction();
+        $simpayTransaction->setDebugMode(false);
+        $simpayTransaction->setServiceID(Configuration::get('SIMPAY_SERVICE_ID'));
+        $simpayTransaction->setApiKey(Configuration::get('SIMPAY_API_KEY'));
+        $simpayTransaction->setControl($this->module->currentOrder);
+        $simpayTransaction->setCompleteLink($returnUrl);
+        $simpayTransaction->setFailureLink($returnUrl);
+        if (Configuration::get('SIMPAY_PAYMENT_TYPE') == "amount") {
+            $simpayTransaction->setAmount($amount);
+        } elseif (Configuration::get('SIMPAY_PAYMENT_TYPE') == "amount_gross") {
+            $simpayTransaction->setAmountGross($amount);
+        } else {
+            $simpayTransaction->setAmountRequired($amount);
+        }
+        
+        $simpayTransaction->generateTransaction();
+        if ($simpayTransaction->getResults()->status == "success") {
+            Tools::redirect($simpayTransaction->getResults()->link);
+        } else {
+            $this->module->l('Nie udało się przejść do płatności!', 'validation');
+        }
+    }
 }

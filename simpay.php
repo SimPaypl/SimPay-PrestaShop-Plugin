@@ -30,53 +30,54 @@ if (!defined('_PS_VERSION_')) {
 
 require_once(_PS_MODULE_DIR_ . '/simpay/inc/SimPay.db.class.php');
 
-class SimPay extends PaymentModule {
-	
-	private $simpayTransaction;
-	
-	public function __construct() {
-		
-		$this->name = 'simpay';
-		$this->displayName = 'SimPay';
-		$this->tab = 'payments_gateways';
-		$this->version = '1.0.0';
-		$this->author = 'Payments Soultion sp. z o.o.';
-		$this->need_instance = 0;
-		$this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_]; 
-		$this->bootstrap = true;
-	 
-		parent::__construct();
-	 
-		$this->displayName = $this->l('SimPay');
-		$this->description = $this->l('Płatności DirectCarrierBilling SMS+ dla twojego sklepu');
-		
-	}
-	
-	public function install() {
-		
-		/*if (extension_loaded('curl') == false) {
-			$this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
-			return false;
-		}*/
+class SimPay extends PaymentModule
+{
+    
+    private $simpayTransaction;
+    
+    public function __construct()
+    {
+        
+        $this->name = 'simpay';
+        $this->displayName = 'SimPay';
+        $this->tab = 'payments_gateways';
+        $this->version = '1.0.0';
+        $this->author = 'Payments Soultion sp. z o.o.';
+        $this->need_instance = 0;
+        $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
+        $this->bootstrap = true;
+     
+        parent::__construct();
+     
+        $this->displayName = $this->l('SimPay');
+        $this->description = $this->l('Płatności DirectCarrierBilling SMS+ dla twojego sklepu');
+    }
+    
+    public function install()
+    {
+        
+        /*if (extension_loaded('curl') == false) {
+            $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
+            return false;
+        }*/
 
-		if (
-		!parent::install() ||
-		!$this->registerHook('paymentOptions') ||
-		!$this->registerHook('paymentReturn') ||
-		!$this->registerHook('displayOrderDetail') ||
-		!Configuration::updateValue('SIMPAY_SERVICE_ID', '') ||
-		!Configuration::updateValue('SIMPAY_API_KEY', '') ||
-		!Configuration::updateValue('SIMPAY_PAYMENT_TYPE', '')
-		) {
-			return false;
-		}
-		
-		return true;
-		
-	}
-	
-    public function hookPaymentOptions($params) {
-		
+        if (!parent::install() ||
+        !$this->registerHook('paymentOptions') ||
+        !$this->registerHook('paymentReturn') ||
+        !$this->registerHook('displayOrderDetail') ||
+        !Configuration::updateValue('SIMPAY_SERVICE_ID', '') ||
+        !Configuration::updateValue('SIMPAY_API_KEY', '') ||
+        !Configuration::updateValue('SIMPAY_PAYMENT_TYPE', '')
+        ) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    public function hookPaymentOptions($params)
+    {
+        
         if (!$this->active) {
             return;
         }
@@ -87,8 +88,9 @@ class SimPay extends PaymentModule {
 
         return $payment_options;
     }
-	
-    public function getExternalPaymentOption() {
+    
+    public function getExternalPaymentOption()
+    {
         $externalOption = new \PrestaShop\PrestaShop\Core\Payment\PaymentOption();
         $externalOption->setCallToActionText($this->l('SimPay DirectCarrierBilling (SMS+)'))
                        ->setAction($this->context->link->getModuleLink($this->name, 'validation', array(), true))
@@ -97,32 +99,34 @@ class SimPay extends PaymentModule {
 
         return $externalOption;
     }
-	
-    public function getContent() {
-		$output = null;
+    
+    public function getContent()
+    {
+        $output = null;
     
         if (Tools::isSubmit('submit'.$this->name)) {
-			$simpay_service_id = Tools::getValue('SIMPAY_SERVICE_ID');
-			$simpay_api_key = Tools::getValue('SIMPAY_API_KEY');
-			$simpay_payment_type = Tools::getValue('SIMPAY_PAYMENT_TYPE');
-			if (!empty($simpay_service_id) && !empty($simpay_api_key) && !empty($simpay_payment_type)) {
-				Configuration::updateValue('SIMPAY_SERVICE_ID', $simpay_service_id);
-				Configuration::updateValue('SIMPAY_API_KEY', $simpay_api_key);
-				Configuration::updateValue('SIMPAY_PAYMENT_TYPE', $simpay_payment_type);
-				$output .= $this->displayConfirmation($this->l('Ustawienia zaktualizowane.'));
-			} else {
-				$output .= $this->displayError($this->l('Wypełnij poprawnie wszystkie pola.'));
-			}
-		}
-		return $output . $this->displayForm();
-	}
-	
-    public function displayForm() {
-		
+            $simpay_service_id = Tools::getValue('SIMPAY_SERVICE_ID');
+            $simpay_api_key = Tools::getValue('SIMPAY_API_KEY');
+            $simpay_payment_type = Tools::getValue('SIMPAY_PAYMENT_TYPE');
+            if (!empty($simpay_service_id) && !empty($simpay_api_key) && !empty($simpay_payment_type)) {
+                Configuration::updateValue('SIMPAY_SERVICE_ID', $simpay_service_id);
+                Configuration::updateValue('SIMPAY_API_KEY', $simpay_api_key);
+                Configuration::updateValue('SIMPAY_PAYMENT_TYPE', $simpay_payment_type);
+                $output .= $this->displayConfirmation($this->l('Ustawienia zaktualizowane.'));
+            } else {
+                $output .= $this->displayError($this->l('Wypełnij poprawnie wszystkie pola.'));
+            }
+        }
+        return $output . $this->displayForm();
+    }
+    
+    public function displayForm()
+    {
+        
         $default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
-		
-		$fields_form = [];
-		
+        
+        $fields_form = [];
+        
         $fields_form[0]['form'] = array(
             'legend' => array(
                 'title' => $this->l('Ustawienia'),
@@ -142,30 +146,30 @@ class SimPay extends PaymentModule {
                     'size' => 20,
                     'required' => true
                 ),
-				array(
-					'type' => 'select',
-					'lang' => true,
-					'label' => $this->l('Typ kwoty'),
-					'name' => 'SIMPAY_PAYMENT_TYPE',
-					'options' => array(
-						'query' => array(
-							array(
-								'value' => 'amount_gross',
-								'name' => 'Kwota brutto'
-							),
-							array(
-								'value' => 'amount',
-								'name' => 'Kwota netto'
-							),
-							array(
-								'value' => 'amount_required',
-								'name' => 'Kwota wymagana, zmieniana przy wyborze operatora'
-							)
-						),
-						'id' => 'value',
-						'name' => 'name'
-					)
-				),
+                array(
+                    'type' => 'select',
+                    'lang' => true,
+                    'label' => $this->l('Typ kwoty'),
+                    'name' => 'SIMPAY_PAYMENT_TYPE',
+                    'options' => array(
+                        'query' => array(
+                            array(
+                                'value' => 'amount_gross',
+                                'name' => 'Kwota brutto'
+                            ),
+                            array(
+                                'value' => 'amount',
+                                'name' => 'Kwota netto'
+                            ),
+                            array(
+                                'value' => 'amount_required',
+                                'name' => 'Kwota wymagana, zmieniana przy wyborze operatora'
+                            )
+                        ),
+                        'id' => 'value',
+                        'name' => 'name'
+                    )
+                ),
             ),
             'submit' => array(
                 'title' => $this->l('Zapisz'),
@@ -210,32 +214,31 @@ class SimPay extends PaymentModule {
         
         return $helper->generateForm($fields_form);
     }
-	
-	/*public function payment() {
-		
-		$simpayTransaction = new SimPayDBTransaction();
-		$simpayTransaction->setDebugMode(FALSE);
-		$simpayTransaction->setServiceID(91);
-		$simpayTransaction->setApiKey('ZFb23GCnTDAc46Nq');
-		$simpayTransaction->setControl('dd');
-		$simpayTransaction->setCompleteLink('https://simpay.pl');
-		$simpayTransaction->setFailureLink('https://simpay.pl');
-		/*if ($cfg['simpay']['amountType'] == "amount") {
-			$simpayTransaction->setAmount($cfg['simpay']['amount']);
-		} elseif ($cfg['simpay']['amountType'] == "amount_gross") {
-			$simpayTransaction->setAmountGross($cfg['simpay']['amount']);
-		} else {
-			$simpayTransaction->setAmountRequired($cfg['simpay']['amount']);
-		}
-		$simpayTransaction->setAmount(20.00);
-		$simpayTransaction->generateTransaction();
-		if ($simpayTransaction->getResults()->status == "success") {
-			return [
-				'link' => $simpayTransaction->getResults()->link
-			];
-		} else {
-			return false;
-		}
-	}*/
-	
+    
+    /*public function payment() {
+
+        $simpayTransaction = new SimPayDBTransaction();
+        $simpayTransaction->setDebugMode(FALSE);
+        $simpayTransaction->setServiceID(91);
+        $simpayTransaction->setApiKey('ZFb23GCnTDAc46Nq');
+        $simpayTransaction->setControl('dd');
+        $simpayTransaction->setCompleteLink('https://simpay.pl');
+        $simpayTransaction->setFailureLink('https://simpay.pl');
+        /*if ($cfg['simpay']['amountType'] == "amount") {
+            $simpayTransaction->setAmount($cfg['simpay']['amount']);
+        } elseif ($cfg['simpay']['amountType'] == "amount_gross") {
+            $simpayTransaction->setAmountGross($cfg['simpay']['amount']);
+        } else {
+            $simpayTransaction->setAmountRequired($cfg['simpay']['amount']);
+        }
+        $simpayTransaction->setAmount(20.00);
+        $simpayTransaction->generateTransaction();
+        if ($simpayTransaction->getResults()->status == "success") {
+            return [
+                'link' => $simpayTransaction->getResults()->link
+            ];
+        } else {
+            return false;
+        }
+    }*/
 }

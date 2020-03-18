@@ -24,57 +24,56 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class SimPayNotificationModuleFrontController extends ModuleFrontController {
-	
-	private $simPay;
-	
-	public function postProcess() {
-	
+class SimPayNotificationModuleFrontController extends ModuleFrontController
+{
+    
+    private $simPay;
+    
+    public function postProcess()
+    {
+    
         if ($this->module->active == false) {
             exit();
         }
-		
-		$simPay = new SimPayDB();
-		
-		$simPay->setApiKey(Configuration::get('SIMPAY_API_KEY'));
-		
-		if (!$simPay->checkIp($simPay->getRemoteAddr())) {
-			$simPay->okTransaction();
-			exit();
-		}
-		
-		if ($simPay->parse($_POST)) {
+        
+        $simPay = new SimPayDB();
+        
+        $simPay->setApiKey(Configuration::get('SIMPAY_API_KEY'));
+        
+        if (!$simPay->checkIp($simPay->getRemoteAddr())) {
+            $simPay->okTransaction();
+            exit();
+        }
+        
+        if ($simPay->parse($_POST)) {
+            if ($simPay->isError()) {
+                $simPay->okTransaction();
+                exit();
+            }
+            
+            if (!$simPay->isTransactionPaid()) {
+                $simPay->okTransaction();
+                exit();
+            }
+        } else {
+            error_log($simPay->getErrorText());
+            $simPay->okTransaction();
+            exit();
+        }
 
-			if ($simPay->isError()) {
-				$simPay->okTransaction();
-				exit();
-			}
-			
-			if (!$simPay->isTransactionPaid()) {
-				$simPay->okTransaction();
-				exit();
-			}
-		} else {
-			error_log($simPay->getErrorText());
-			$simPay->okTransaction();
-			exit();
-		}
-
-		$history = new OrderHistory();
-		$history->id_order = $simPay->getControl();
-		
-		$order = new Order($simPay->getControl());
-		if ($simPay->getValueGross() < $order->total_products_wt) {
-			$simPay->okTransaction();
-			exit();
-		}
-		
-		$history->changeIdOrderState(Configuration::get('PS_OS_PAYMENT'), $simPay->getControl());
-		$history->addWithemail(true);
-		
-		$simPay->okTransaction();
-		exit();
-	
-	}
-	
+        $history = new OrderHistory();
+        $history->id_order = $simPay->getControl();
+        
+        $order = new Order($simPay->getControl());
+        if ($simPay->getValueGross() < $order->total_products_wt) {
+            $simPay->okTransaction();
+            exit();
+        }
+        
+        $history->changeIdOrderState(Configuration::get('PS_OS_PAYMENT'), $simPay->getControl());
+        $history->addWithemail(true);
+        
+        $simPay->okTransaction();
+        exit();
+    }
 }
